@@ -3,10 +3,21 @@ __author__ = 'Callum'
 # Make sure you run with a user with access to ALL of the projects
 #Python 3.7.3
 #Version: 0.1
-#Date: Jul 10th 2020
+#Date: Jul 13th 2020
 
-import requests, json, copy, itertools
+import requests, json, copy
 from requests.auth import HTTPBasicAuth
+
+def check_for_invalid_field_types(auth_token, paxata_url, project_schema_json):
+    result = False
+    for column in project_schema_json:
+        if column['columnType']  not in ['Number','String','DateTime','Boolean']:
+            print("INCORRECT DATATYPE IN PROJECT= " + column['columnType'])
+            outF.write("INCORRECT DATATYPE IN PROJECT= " + column['columnType'])
+            result = True
+    return result
+
+
 
 # (5) Get all the Projects that have been described with a specific "description_tag"
 def get_all_project_information(auth_token, paxata_url):
@@ -44,27 +55,6 @@ def get_project_script(auth_token,paxata_url,projectId):
         json_of_project = 0
         myResponse.raise_for_status()
     return(json_of_project)
-
-# return the difference between two dictionaries
-def dict_diff(first, second):
-    """ Return a dict of keys that differ with another config object.  If a value is
-        not found in one fo the configs, it will be represented by KEYNOTFOUND.
-        @param first:   Fist dictionary to diff.
-        @param second:  Second dicationary to diff.
-        @return diff:   Dict of Key => (first.val, second.val)
-    """
-    diff = {}
-    # Check all keys in first dict
-    for key in first.keys():
-        if (not second.has_key(key)):
-            diff[key] = (first[key], KEYNOTFOUND)
-        elif (first[key] != second[key]):
-            diff[key] = (first[key], second[key])
-    # Check all keys in second dict to find missing
-    for key in second.keys():
-        if (not first.has_key(key)):
-            diff[key] = (KEYNOTFOUND, second[key])
-    return diff
 
 # Update an existing Project's script file
 def update_project_with_new_script(auth_token,paxata_url,updated_json_script,projectId):
@@ -157,38 +147,28 @@ def update_project_script_with_new_libraryid(temp_json_of_project, libraryId, li
 
 def check_project():
     # *****************THESE ARE YO VARIABLES - YOU NEED TO EDIT THESE *******
-    #paxata_url = event['paxata_url']
-    #paxata_rest_token = event['paxata_rest_token']
-    #projectId = event['projectId']
-    #libraryId = event['libraryId']
-
-    # variables to set
-    #dataprep.paxata.com
-    #paxata_rest_token = "47dfcdd37fa64428acffc0ed32f93e61"
-    #paxata_url = "https://dataprep.paxata.com/rest"
-    
     #dataprep.paxata.com
     paxata_rest_token = "4efac0a8b3494ad3b5139708321e477a"
     paxata_url = "https://datarobot.paxata.com/rest"
-    # ID of the project you want to dynamically update the script of
-    #projectId = "37969e3b0b0b49e1bc1d8ace785343d4"
-    # This is the libraryId of the dataset that will update the project
-    #libraryId = "d285c04e4d63456d97e8b6daf8d682f4"
     # end of variables to set
-
+   
+    #check if someone has left off the rest part of the 
+    # URL checking (making sure the /rest is on the URL)
+    if paxata_url[-1:] == "/":
+        paxata_url = paxata_url[0:-1]
+    if paxata_url[-5:] != "/rest":
+        paxata_url = paxata_url+"/rest"
+    
     auth_token = HTTPBasicAuth("", paxata_rest_token)
-
     # open a (new) file to write
     outF = open("paxata_metadata_report.txt", "w")
-
     #1 get the projects in the tenant
     list_of_projects = get_all_project_information(auth_token, paxata_url)
-    #list to 
+    #list to hold the problem projectIds
     problem_projectIds = []
-
     print ("Number of Projects = " + str(len(list_of_projects)))
     outF.write("Paxata - Metadata report for " + paxata_url)
-    outF.write("Number of Projects = " + str(len(list_of_projects)))
+    outF.write("Number of Projects = " + str(len(list_of_projects)) + "\n")
     for project_json in list_of_projects:
         projectId = project_json.get('projectId')
         project_name = project_json.get('name')
@@ -198,19 +178,20 @@ def check_project():
         full_json_script = copy.deepcopy(project_script)
         # delete everything other than the first step in the project
         del project_script['steps'][1:]
-        
+        # main loop to go through each project
         for step in project_script['steps']:
             if (step['type']) == "AnchorTable":
                 libraryId = step['importStep']['libraryId']
                 library_version = step['importStep']['libraryVersion']
                 project_schema = step['importStep']['columns']
                 library_schema = ""
-                
-                # Get the library version
-                jdata_datasources = get_name_and_schema_of_datasource(auth_token,paxata_url,libraryId,library_version)
-                
+                # this is a function that will check that there are only valid values in field type (in the project script)
+                valid_datatypes_in_project = check_for_invalid_field_types(auth_token, paxata_url, project_schema)
+                # Get the project metadata
+                jdata_datasources = get_name_and_schema_of_datasource(auth_token,paxata_url,libraryId,library_version)                
                 # checking this first because there is the possibility that the schema is empty and everything else is populated
                 if jdata_datasources:
+                    # extract the specific library data for 
                     library_name = jdata_datasources.get('name')
                     library_schema = jdata_datasources.get('schema')
                     library_createTime = jdata_datasources.get('createTime')
@@ -244,6 +225,8 @@ def check_project():
                         print("Schemas are the same for Project: " + str(project_name))
                         outF.write("Schemas are the same for Project: " + str(project_name) + "\n")
                     else:
+                        # add the projectId to the list of things that might have a problem
+                        problem_projectIds.append(projectId)
                         print("Schemas are different for Project: " + project_name + " and " + library_name + " (Version:" + str(library_version) + " Created:"+library_createTime)
                         print(" from source:" + library_source + " . Rows = " + str(library_rowcount) + "(" + str(library_size) + "bytes). State: " + library_state + "\n")
                         
@@ -267,8 +250,9 @@ def check_project():
                             if not column['columnDisplayName'] == column['columnName']:
                                 print ("WARNING, manually changed Project script metadata. Column: " + column['columnDisplayName'] + " is not equal to: " + column['columnName'] + " | in Project Name= " + project_name + " ProjectId= "+ projectId)
                                 outF.write("WARNING, manually changed Project script metadata. Column: " + column['columnDisplayName'] + " is not equal to: " + column['columnName'] + " | in Project Name= " + project_name + " ProjectId= "+ projectId + "\n")
+    outF.write("\n\n*** Summary. Projects analysed = "+ str(len(list_of_projects))+ "\n")
+    outF.write("Potential problem projectIds are: " + str(problem_projectIds))
     outF.close()
-
 
 if __name__ == "__main__":
     check_project()
