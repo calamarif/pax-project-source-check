@@ -8,16 +8,16 @@
       "PAXATA_API_ROOT":"rest",
       "PAXATA_LOGIN_NAME":"",
       "PAXATA_LOGIN_PASSWORD":"",
-      "PAXATA_REST_TOKEN":"47dfcdd37fa64428acffc0ed32f93e61"
+      "PAXATA_REST_TOKEN":""
     },
-    "TENANT2":{
+    "MY_DATAROBOT_TENANT":{
       "PROTOCOL":"https",
       "PAXATA_CORE_SERVER":"datarobot.paxata.com",
       "PAXATA_APP_PORT":"443",
       "PAXATA_API_ROOT":"rest",
       "PAXATA_LOGIN_NAME":"",
       "PAXATA_LOGIN_PASSWORD":"",
-      "PAXATA_REST_TOKEN":"3a40ca3676c9444f8572f5e7c3533ed1"
+      "PAXATA_REST_TOKEN":""
     },
     "DEMOTENANT":{
       "PROTOCOL":"https",
@@ -26,6 +26,6 @@
       "PAXATA_API_ROOT":"rest",
       "PAXATA_LOGIN_NAME":"",
       "PAXATA_LOGIN_PASSWORD":"",
-      "PAXATA_REST_TOKEN":"b9d8a67cbeaf4bfba36b68572ea20c50"
+      "PAXATA_REST_TOKEN":""
     }
   }

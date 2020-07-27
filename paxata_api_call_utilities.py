@@ -34,13 +34,11 @@ logger = logging.getLogger(__name__)
 # suppress insecure request warning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-
 # Error class, so that we can raise exceptions from the function.
 class AppError(Exception):
     def __init__(self, msg, err_code):
         self.msg = msg
         self.errCode = err_code
-
 
 class ApiEp:
     PAX_AUTHENTICATION_TOKEN_API = r'/tokens'

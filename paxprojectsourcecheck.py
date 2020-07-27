@@ -2,7 +2,7 @@ __author__ = 'Callum'
 # paxprojectsourcecheck.py - Pax Project Source Check - checks the source of the schema - 
 # Make sure you run with a user with access to ALL of the projects
 # Python 3.7.3
-# Version: 0.2
+# Version: 0.3
 # Date: Jul 27th 2020
 
 """
